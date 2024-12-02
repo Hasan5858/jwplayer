@@ -1,8 +1,54 @@
+// Event listener for form submission
 document.getElementById('uploadForm').addEventListener('submit', function(e) {
     e.preventDefault();
     uploadFiles();
 });
 
+// Helper function to create temporary input for clipboard fallback
+function createTemporaryInput(text) {
+    const input = document.createElement('input');
+    input.style.position = 'fixed';
+    input.style.opacity = 0;
+    input.value = text;
+    document.body.appendChild(input);
+    return input;
+}
+
+// Clipboard fallback function
+function fallbackCopyToClipboard(text, successMsg) {
+    try {
+        const input = createTemporaryInput(text);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        successMsg.style.display = 'inline';
+        setTimeout(() => successMsg.style.display = 'none', 2000);
+    } catch (err) {
+        console.error('Fallback clipboard copy failed:', err);
+        alert('Copy failed. Please copy the link manually.');
+    }
+}
+
+// Enhanced copy to clipboard function
+function copyToClipboard(text, successId) {
+    const successMsg = document.getElementById(successId);
+    
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                successMsg.style.display = 'inline';
+                setTimeout(() => successMsg.style.display = 'none', 2000);
+            })
+            .catch(err => {
+                console.error('Clipboard API failed:', err);
+                fallbackCopyToClipboard(text, successMsg);
+            });
+    } else {
+        fallbackCopyToClipboard(text, successMsg);
+    }
+}
+
+// Main upload function
 async function uploadFiles() {
     const fileInput = document.getElementById('fileInput');
     const statusDiv = document.getElementById('uploadStatus');
@@ -91,14 +137,4 @@ async function uploadFiles() {
         progressText.textContent = '';
         fileInput.value = '';
     }
-}
-
-function copyToClipboard(text, successId) {
-    navigator.clipboard.writeText(text).then(() => {
-        const successMsg = document.getElementById(successId);
-        successMsg.style.display = 'inline';
-        setTimeout(() => {
-            successMsg.style.display = 'none';
-        }, 2000);
-    });
 }
